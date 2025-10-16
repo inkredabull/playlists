@@ -1,0 +1,111 @@
+# Ritual Playlist Phases Configuration
+# The secret sauce for creating transformative 30-minute musical journeys
+
+phases:
+  - name: "Going to Temple"
+    duration_minutes: 4
+    description: "Phase Shift / The Anticipation"
+    keywords:
+      - "meditation"
+      - "calm"
+      - "peace"
+      - "ambient"
+      - "temple"
+      - "sacred"
+      - "quiet"
+      - "introspective"
+    duration_range:
+      min: 120000  # 2 minutes in ms
+      max: 360000  # 6 minutes in ms
+
+  - name: "Intro"
+    duration_minutes: 4
+    description: "Gettin' Goin' / Range Ridin' / Trance Walk / Warmup"
+    keywords:
+      - "warm"
+      - "begin"
+      - "groove"
+      - "build"
+      - "intro"
+      - "start"
+      - "gentle"
+      - "flow"
+    duration_range:
+      min: 120000  # 2 minutes in ms
+      max: 300000  # 5 minutes in ms
+
+  - name: "Dancing With the Divine"
+    duration_minutes: 6
+    description: "The Prayer / Ecstasy / Being the Whirling Dervish / Celebrate / Finding Center"
+    keywords:
+      - "dance"
+      - "joy"
+      - "sacred"
+      - "spirit"
+      - "divine"
+      - "ecstasy"
+      - "celebration"
+      - "prayer"
+      - "whirling"
+      - "center"
+    duration_range:
+      min: 180000  # 3 minutes in ms
+      max: 360000  # 6 minutes in ms
+
+  - name: "Dealer's Choice"
+    duration_minutes: 5
+    description: "Wild card - anything goes"
+    keywords:
+      - "wild"
+      - "free"
+      - "surprise"
+      - "random"
+      - "choice"
+      - "anything"
+      - "unexpected"
+    duration_range:
+      min: 60000   # 1 minute in ms
+      max: 480000  # 8 minutes in ms
+
+  - name: "Unleashing the Beast"
+    duration_minutes: 6
+    description: "Climbing the Mountain / Thick of It / Innit"
+    keywords:
+      - "power"
+      - "intense"
+      - "warrior"
+      - "fire"
+      - "beast"
+      - "mountain"
+      - "climbing"
+      - "thick"
+      - "energy"
+      - "strength"
+    duration_range:
+      min: 180000  # 3 minutes in ms
+      max: 420000  # 7 minutes in ms
+
+  - name: "Outro"
+    duration_minutes: 5
+    description: "Cool Down / Stretch"
+    keywords:
+      - "cool"
+      - "relax"
+      - "gentle"
+      - "peaceful"
+      - "outro"
+      - "stretch"
+      - "calm"
+      - "wind"
+      - "down"
+    duration_range:
+      min: 120000  # 2 minutes in ms
+      max: 360000  # 6 minutes in ms
+
+# Total target duration
+total_duration_minutes: 30
+total_duration_ms: 1800000
+
+# Playlist metadata
+playlist_name: "The Ritual"
+playlist_description: "A transformative 30-minute musical journey through sacred phases"

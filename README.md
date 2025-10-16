@@ -27,29 +27,57 @@ A TypeScript application that automatically creates 20-minute "Ritual" playlists
    npm install
    ```
 
-2. **Configure Spotify API:**
+2. **Start ngrok and get forwarding URL:**
+   ```bash
+   ngrok http 8888
+   ```
+   - Keep this running in a separate terminal
+   - Copy the HTTPS forwarding URL (e.g., `https://abc123.ngrok-free.app`)
+
+3. **Configure Spotify API:**
    - Copy `.env.example` to `.env`
    - Get your Spotify credentials from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Fill in your credentials:
+   - Fill in your credentials with the ngrok URL:
      ```
      SPOTIFY_CLIENT_ID=your_spotify_client_id
      SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-     SPOTIFY_REDIRECT_URI=http://localhost:8888/callback
+     SPOTIFY_REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/callback
+     PLAYLIST_DURATION_MINUTES=30
      ```
+   - **Important**: In your Spotify app settings, add the same ngrok URL as a redirect URI:
+     `https://your-ngrok-url.ngrok-free.app/callback`
 
-3. **Authenticate with Spotify:**
+4. **Authenticate with Spotify:**
    ```bash
    npm run auth
    ```
    This will:
+   - Start a local callback server on port 8888
    - Open your browser to authorize the app
-   - Display your access tokens
-   - Add the tokens to your `.env` file
+   - Automatically handle the OAuth callback via ngrok
+   - Display your access tokens to add to your `.env` file
 
-4. **Build the project:**
+5. **Build the project:**
    ```bash
    npm run build
    ```
+
+## Configuration
+
+### Environment Variables
+- `SPOTIFY_CLIENT_ID` - Your Spotify app client ID
+- `SPOTIFY_CLIENT_SECRET` - Your Spotify app client secret  
+- `SPOTIFY_REDIRECT_URI` - Your ngrok callback URL
+- `PLAYLIST_DURATION_MINUTES` - Playlist duration in minutes (default: 30)
+
+### Customizing Playlist Duration
+You can change the playlist duration by setting `PLAYLIST_DURATION_MINUTES` in your `.env` file:
+```bash
+PLAYLIST_DURATION_MINUTES=45  # For 45-minute playlists
+PLAYLIST_DURATION_MINUTES=20  # For 20-minute playlists
+```
+
+The phase durations will be scaled proportionally to maintain the ritual flow.
 
 ## Usage
 

@@ -170,9 +170,23 @@ Or run the app with --auth flag to start the authentication flow.
 
   async getLikedSongs(limit: number = 50, offset: number = 0): Promise<SpotifyTrack[]> {
     try {
+      // Validate and constrain parameters to Spotify API limits
+      const validLimit = Math.min(Math.max(1, limit), 50); // Spotify allows 1-50
+      const validOffset = Math.max(0, offset);
+      
+      console.log(`🔍 Fetching liked songs: limit=${validLimit}, offset=${validOffset}`);
+      
       const response = await this.api.get('/me/tracks', {
-        params: { limit, offset },
+        params: { 
+          limit: validLimit, 
+          offset: validOffset 
+        },
       });
+
+      if (!response.data || !response.data.items) {
+        console.log('No liked songs found or empty response');
+        return [];
+      }
 
       return response.data.items.map((item: any) => ({
         id: item.track.id,
@@ -182,8 +196,17 @@ Or run the app with --auth flag to start the authentication flow.
         uri: item.track.uri,
         external_urls: item.track.external_urls,
       }));
-    } catch (error) {
-      throw new Error(`Failed to fetch liked songs: ${error}`);
+    } catch (error: unknown) {
+      const axiosError = error as any; // Type assertion for axios error
+      console.error('Spotify API Error:', axiosError.response?.data || axiosError.message);
+      if (axiosError.response?.status === 400) {
+        throw new Error(`Bad request - check your Spotify app permissions and scopes`);
+      } else if (axiosError.response?.status === 401) {
+        throw new Error(`Unauthorized - your access token may be invalid`);
+      } else if (axiosError.response?.status === 403) {
+        throw new Error(`Forbidden - check your Spotify app has the required scopes`);
+      }
+      throw new Error(`Failed to fetch liked songs: ${axiosError.message}`);
     }
   }
 
@@ -192,17 +215,31 @@ Or run the app with --auth flag to start the authentication flow.
     let offset = 0;
     const limit = 50;
 
-    while (true) {
-      const tracks = await this.getLikedSongs(limit, offset);
-      allTracks.push(...tracks);
-      
-      if (tracks.length < limit) {
-        break;
+    try {
+      let hasMoreTracks = true;
+      while (hasMoreTracks) {
+        const tracks = await this.getLikedSongs(limit, offset);
+        allTracks.push(...tracks);
+        
+        if (tracks.length < limit) {
+          hasMoreTracks = false;
+        } else {
+          offset += limit;
+        }
       }
-      offset += limit;
-    }
 
-    return allTracks;
+      if (allTracks.length === 0) {
+        console.log('⚠️  No liked songs found in your Spotify library');
+        console.log('💡 Tip: Like some songs in Spotify first, then try again');
+      } else {
+        console.log(`✅ Found ${allTracks.length} liked songs`);
+      }
+
+      return allTracks;
+    } catch (error) {
+      console.error('❌ Failed to fetch liked songs:', error);
+      throw error;
+    }
   }
 
 
