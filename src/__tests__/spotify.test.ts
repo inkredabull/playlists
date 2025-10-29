@@ -12,8 +12,6 @@ describe('SpotifyService', () => {
     process.env.SPOTIFY_CLIENT_SECRET = 'test_client_secret';
     process.env.SPOTIFY_REDIRECT_URI = 'http://localhost:8888/callback';
 
-    spotifyService = new SpotifyService();
-    
     mockedAxios.create.mockReturnValue({
       interceptors: {
         request: { use: jest.fn() },
@@ -22,6 +20,8 @@ describe('SpotifyService', () => {
       get: jest.fn(),
       post: jest.fn()
     } as any);
+
+    spotifyService = new SpotifyService();
   });
 
   afterEach(() => {

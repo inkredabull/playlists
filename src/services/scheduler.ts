@@ -1,16 +1,23 @@
 import * as cron from 'node-cron';
 import { SpotifyService } from './spotify';
 import { PlaylistBuilder } from './playlist-builder';
+import { NotificationService } from './notification';
 
 export class RitualScheduler {
   private spotifyService: SpotifyService;
   private playlistBuilder: PlaylistBuilder;
+  private notificationService: NotificationService;
   private isRunning: boolean = false;
   private scheduledTask?: cron.ScheduledTask;
 
-  constructor() {
-    this.spotifyService = new SpotifyService();
-    this.playlistBuilder = new PlaylistBuilder(this.spotifyService);
+  constructor(
+    spotifyService?: SpotifyService,
+    playlistBuilder?: PlaylistBuilder,
+    notificationService?: NotificationService
+  ) {
+    this.spotifyService = spotifyService ?? new SpotifyService();
+    this.playlistBuilder = playlistBuilder ?? new PlaylistBuilder(this.spotifyService);
+    this.notificationService = notificationService ?? new NotificationService();
   }
 
   async initialize(): Promise<void> {
@@ -44,6 +51,8 @@ export class RitualScheduler {
       playlist.phaseBreakdown.forEach(phase => {
         console.log(`   ${phase.phase}: ${phase.tracks.length} tracks, ${Math.round(phase.durationMs / 60000)}min`);
       });
+      
+      await this.notificationService.notifyPlaylistCreated({ playlist, playlistId });
 
     } catch (error) {
       console.error('❌ Failed to create daily ritual playlist:', error);
@@ -51,7 +60,7 @@ export class RitualScheduler {
     }
   }
 
-  startDailySchedule(hour: number = 6, minute: number = 0): void {
+  startDailySchedule(hour: number = 3, minute: number = 0): void {
     if (this.isRunning) {
       console.log('⚠️  Scheduler is already running');
       return;

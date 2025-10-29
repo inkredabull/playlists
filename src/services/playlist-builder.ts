@@ -10,7 +10,7 @@ export class PlaylistBuilder {
   }
 
   async generateRitualPlaylist(): Promise<GeneratedPlaylist> {
-    const likedSongs = await this.spotifyService.getLikedSongs(200, 0);
+    const likedSongs = await this.spotifyService.getAllLikedSongs();
     
     if (likedSongs.length === 0) {
       throw new Error('No liked songs found');

@@ -1,6 +1,7 @@
 import { RitualScheduler } from '../services/scheduler';
 import { SpotifyService } from '../services/spotify';
 import { PlaylistBuilder } from '../services/playlist-builder';
+import { NotificationService } from '../services/notification';
 
 jest.mock('../services/spotify');
 jest.mock('../services/playlist-builder');
@@ -10,6 +11,7 @@ describe('RitualScheduler', () => {
   let scheduler: RitualScheduler;
   let mockSpotifyService: jest.Mocked<SpotifyService>;
   let mockPlaylistBuilder: jest.Mocked<PlaylistBuilder>;
+  let mockNotificationService: jest.Mocked<NotificationService>;
 
   beforeEach(() => {
     mockSpotifyService = {
@@ -22,9 +24,15 @@ describe('RitualScheduler', () => {
       generateRitualPlaylist: jest.fn()
     } as any;
 
-    scheduler = new RitualScheduler();
-    (scheduler as any).spotifyService = mockSpotifyService;
-    (scheduler as any).playlistBuilder = mockPlaylistBuilder;
+    mockNotificationService = {
+      notifyPlaylistCreated: jest.fn()
+    } as any;
+
+    scheduler = new RitualScheduler(
+      mockSpotifyService,
+      mockPlaylistBuilder,
+      mockNotificationService
+    );
   });
 
   describe('initialize', () => {
@@ -64,6 +72,7 @@ describe('RitualScheduler', () => {
       mockPlaylistBuilder.generateRitualPlaylist.mockResolvedValue(mockPlaylist);
       mockSpotifyService.createPlaylist.mockResolvedValue('playlist123');
       mockSpotifyService.addTracksToPlaylist.mockResolvedValue();
+      mockNotificationService.notifyPlaylistCreated.mockResolvedValue();
 
       await scheduler.createDailyRitualPlaylist();
 
@@ -76,6 +85,10 @@ describe('RitualScheduler', () => {
         'playlist123',
         ['spotify:track:1']
       );
+      expect(mockNotificationService.notifyPlaylistCreated).toHaveBeenCalledWith({
+        playlist: mockPlaylist,
+        playlistId: 'playlist123'
+      });
     });
 
     it('should handle errors gracefully', async () => {

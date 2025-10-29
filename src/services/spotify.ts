@@ -210,6 +210,35 @@ Or run the app with --auth flag to start the authentication flow.
     }
   }
 
+  async getAudioFeatures(trackIds: string[]): Promise<AudioFeatures[]> {
+    if (!trackIds || trackIds.length === 0) {
+      throw new Error('No track IDs provided for audio features lookup');
+    }
+
+    try {
+      const chunks = this.chunkArray(trackIds, 100);
+      const features: AudioFeatures[] = [];
+
+      for (const chunk of chunks) {
+        const response = await this.api.get('/audio-features', {
+          params: { ids: chunk.join(',') },
+        });
+
+        if (!response.data || !response.data.audio_features) {
+          throw new Error('Audio features not available for provided track IDs');
+        }
+
+        features.push(...(response.data.audio_features as AudioFeatures[]));
+      }
+
+      return features;
+    } catch (error) {
+      const axiosError = error as any;
+      console.error('Spotify Audio Features Error:', axiosError.response?.data || axiosError.message);
+      throw new Error(`Failed to fetch audio features: ${axiosError.message}`);
+    }
+  }
+
   async getAllLikedSongs(): Promise<SpotifyTrack[]> {
     const allTracks: SpotifyTrack[] = [];
     let offset = 0;
