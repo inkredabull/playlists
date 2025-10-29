@@ -34,7 +34,7 @@ A TypeScript application that automatically creates 20-minute "Ritual" playlists
    - Keep this running in a separate terminal
    - Copy the HTTPS forwarding URL (e.g., `https://abc123.ngrok-free.app`)
 
-3. **Configure Spotify API:**
+3. **Configure Spotify API (local development):**
    - Copy `.env.example` to `.env`
    - Get your Spotify credentials from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
    - Fill in your credentials with the ngrok URL:
@@ -61,6 +61,73 @@ A TypeScript application that automatically creates 20-minute "Ritual" playlists
    ```bash
    npm run build
    ```
+
+## Deploying to Fly.io
+
+1. **Make sure the project builds locally**
+   ```bash
+   npm run build
+   ```
+
+2. **Set Fly secrets (mirrors the values in your `.env`)**
+   ```bash
+   fly secrets set \
+     SPOTIFY_CLIENT_ID=... \
+     SPOTIFY_CLIENT_SECRET=... \
+     SPOTIFY_ACCESS_TOKEN=... \
+     SPOTIFY_REFRESH_TOKEN=... \
+     PLAYLIST_DURATION_MINUTES=30
+   ```
+   - `SPOTIFY_ACCESS_TOKEN` and `SPOTIFY_REFRESH_TOKEN` should be generated via the auth flow (see below).
+   - If you are running the auth flow locally, keep `SPOTIFY_REDIRECT_URI=http://localhost:8888/callback`.
+   - For Fly-hosted auth make sure `SPOTIFY_REDIRECT_URI=https://playlists-falling-meadow-3086.fly.dev/callback` is registered in the Spotify dashboard and set as a secret if you override it.
+
+3. **Deploy**
+   ```bash
+   fly deploy
+   ```
+   Fly builds the Docker image using the provided `Dockerfile`, prunes dev dependencies, and starts the machine(s).
+
+4. **Run the auth flow on Fly (optional)**
+   - Connect to a running machine:
+     ```bash
+     fly ssh console -a playlists-falling-meadow-3086 --select
+     ```
+   - Inside the container:
+     ```bash
+     cd /app
+     export PORT=3000
+     export SPOTIFY_REDIRECT_URI=https://playlists-falling-meadow-3086.fly.dev/callback
+     node dist/index.js --auth
+     ```
+   - Authorize in the browser and copy the tokens shown in the success page into `fly secrets set ...`.
+
+5. **Monitor**
+   ```bash
+   fly status                                   # machine overview
+   fly logs -a playlists-falling-meadow-3086    # tail logs
+   fly machine list -a playlists-falling-meadow-3086
+   ```
+   If a machine is stuck after a crash loop you can remove it with:
+   ```bash
+   fly machine destroy <machine-id> -a playlists-falling-meadow-3086 --force
+   ```
+
+## Running the production image locally
+
+You can reproduce the Fly container with Docker:
+
+```bash
+docker build -t playlist-prod .
+docker run --rm -it -p 3000:3000 --env-file .env -e NODE_ENV=production playlist-prod
+```
+
+The container prints the same logs you see on Fly. To exec into the container or run the auth flow:
+
+```bash
+docker exec -it <container-id> /bin/bash
+cd /app && node dist/index.js --auth
+```
 
 ## Configuration
 
