@@ -1,230 +1,174 @@
-# Ritual Playlist Generator
+# Automated Playlist Flow Generator
 
-A TypeScript application that automatically creates 20-minute "Ritual" playlists from your Spotify Liked Songs, following a specific sequence of phases designed for a complete musical journey.
+Builds daily Spotify playlists that follow a curated energy arc. The app pulls from your Liked Songs, scores tracks against a configurable set of phases, and publishes the final playlist automatically. The default configuration expresses a “ritual” journey, but every phase can be renamed, reordered, or redefined to fit any musical flow you care about.
 
-## The Ritual Phases
+## Quick Start
 
-1. **Going to Temple** (3 min) - Phase Shift / The Anticipation
-2. **Intro** (3 min) - Gettin' Goin' / Range Ridin' / Trance Walk / Warmup  
-3. **Dancing With the Divine** (4 min) - The Prayer / Ecstasy / Being the Whirling Dervish / Celebrate / Finding Center
-4. **Dealer's Choice** (3 min) - Wild card - anything goes
-5. **Unleashing the Beast** (4 min) - Climbing the Mountain / Thick of It / Innit
-6. **Outro** (3 min) - Cool Down / Stretch
-
-## Features
-
-- 🎵 Analyzes your Spotify Liked Songs using keyword matching
-- 🧠 Intelligent song categorization based on track names, artist names, and duration
-- ⏰ Daily automated playlist creation with cron scheduling
-- 🎯 Precise 20-minute duration targeting
-- 📊 Detailed phase breakdown and logging
-- 🧪 Comprehensive unit test coverage
-
-## Setup
-
-1. **Install dependencies:**
+1. **Install dependencies**
    ```bash
    npm install
    ```
-
-2. **Start ngrok and get forwarding URL:**
+2. **Copy the example env file and fill in Spotify credentials**
+   ```bash
+   cp .env.example .env
+   ```
+3. **Expose a local callback URL** – easiest with ngrok:
    ```bash
    ngrok http 8888
    ```
-   - Keep this running in a separate terminal
-   - Copy the HTTPS forwarding URL (e.g., `https://abc123.ngrok-free.app`)
-
-3. **Configure Spotify API (local development):**
-   - Copy `.env.example` to `.env`
-   - Get your Spotify credentials from [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Fill in your credentials with the ngrok URL:
-     ```
-     SPOTIFY_CLIENT_ID=your_spotify_client_id
-     SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-     SPOTIFY_REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/callback
-     PLAYLIST_DURATION_MINUTES=30
-     ```
-   - **Important**: In your Spotify app settings, add the same ngrok URL as a redirect URI:
-     `https://your-ngrok-url.ngrok-free.app/callback`
-
-4. **Authenticate with Spotify:**
+   Set `SPOTIFY_REDIRECT_URI` to the forwarded HTTPS URL ending in `/callback`, and register the same URL in the Spotify Developer Dashboard.
+4. **Authenticate with Spotify**
    ```bash
    npm run auth
    ```
-   This will:
-   - Start a local callback server on port 8888
-   - Open your browser to authorize the app
-   - Automatically handle the OAuth callback via ngrok
-   - Display your access tokens to add to your `.env` file
+   Paste the returned access and refresh tokens into `.env`.
+5. **Generate a playlist once**
+   ```bash
+   npm run dev -- --once
+   ```
+   Alternatively run `npm start` to launch the daily scheduler (defaults to 3:00 AM).
 
-5. **Build the project:**
+## Key Capabilities
+
+- 🎛️ Configurable playlist phases stored in `ritual-phases.yaml`
+- 🔍 Keyword and duration-based matching for each phase
+- ⚖️ Automatic duration balancing to hit your target runtime
+- 🗓️ Daily scheduler with pluggable run time (3 AM by default)
+- 📬 Optional Resend-powered email notifications after each playlist is published
+- ☁️ Fly.io deployment recipe with Dockerfile and GitHub Actions workflow
+- 🧪 Jest unit tests and TypeScript throughout
+
+## Designing Your Playlist Arc
+
+The playlist arc is defined in `ritual-phases.yaml`. Each phase declares:
+
+- `name` and `description`
+- `duration_minutes` and acceptable `duration_range`
+- `keywords` used to match track/artist names
+
+The default file describes a six-phase journey (Temple → Intro → High-energy → Cooldown). Rename phases, change durations, or add/remove stages to suit any theme—energizing morning mix, mood-driven study session, etc. `PLAYLIST_DURATION_MINUTES` scales the whole arc proportionally.
+
+## Local Development Details
+
+### Spotify setup
+- Create an app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+- Add your ngrok HTTPS URL (ending in `/callback`) to the app’s redirect URI list.
+- Populate `.env` with:
+  ```
+  SPOTIFY_CLIENT_ID=...
+  SPOTIFY_CLIENT_SECRET=...
+  SPOTIFY_REDIRECT_URI=https://<your-ngrok>.ngrok-free.app/callback
+  PLAYLIST_DURATION_MINUTES=30       # adjust as needed
+  ```
+
+### Authentication flow
+- Run `npm run auth`.
+- Approve the Spotify access request.
+- Copy the printed access & refresh tokens into `.env`.
+- You can re-run `npm run auth` whenever you need fresh tokens.
+
+### Useful commands
+| Action | Command |
+| --- | --- |
+| Build TypeScript | `npm run build` |
+| Generate once | `npm run dev -- --once` |
+| Start scheduled run | `npm start` |
+| Custom schedule | `npm start -- --hour=7 --minute=30` |
+| Run tests | `npm test` |
+| Lint | `npm run lint` |
+
+## Email Notifications (optional)
+
+Set up [Resend](https://resend.com/) if you want an email every time a playlist is published.
+
+1. Verify a sending domain and create an API key in Resend.
+2. Add the following to `.env` (and to Fly secrets in production):
+   ```
+   RESEND_API_KEY=...
+   RESEND_FROM_EMAIL=notifications@yourdomain.com
+   RESEND_NOTIFICATION_EMAIL=you@example.com
+   ```
+3. When the app finishes building a playlist, it will log the Resend message ID and send the email.
+
+If any of the variables are missing, notifications are skipped gracefully with an informative log line.
+
+## Deployment to Fly.io
+
+1. **Confirm the build works locally**
    ```bash
    npm run build
    ```
-
-## Deploying to Fly.io
-
-1. **Make sure the project builds locally**
-   ```bash
-   npm run build
-   ```
-
-2. **Set Fly secrets (mirrors the values in your `.env`)**
+2. **Push secrets to Fly (mirrors `.env`)**
    ```bash
    fly secrets set \
      SPOTIFY_CLIENT_ID=... \
      SPOTIFY_CLIENT_SECRET=... \
      SPOTIFY_ACCESS_TOKEN=... \
      SPOTIFY_REFRESH_TOKEN=... \
-     PLAYLIST_DURATION_MINUTES=30
+     PLAYLIST_DURATION_MINUTES=30 \
+     RESEND_API_KEY=... \
+     RESEND_FROM_EMAIL=... \
+     RESEND_NOTIFICATION_EMAIL=...
    ```
-   - `SPOTIFY_ACCESS_TOKEN` and `SPOTIFY_REFRESH_TOKEN` should be generated via the auth flow (see below).
-   - If you are running the auth flow locally, keep `SPOTIFY_REDIRECT_URI=http://localhost:8888/callback`.
-   - For Fly-hosted auth make sure `SPOTIFY_REDIRECT_URI=https://playlists-falling-meadow-3086.fly.dev/callback` is registered in the Spotify dashboard and set as a secret if you override it.
-
+   Keep `SPOTIFY_REDIRECT_URI=http://localhost:8888/callback` unless you’re running the auth flow on Fly; in that case set it to `https://<app>.fly.dev/callback` and register it with Spotify.
 3. **Deploy**
    ```bash
    fly deploy
    ```
-   Fly builds the Docker image using the provided `Dockerfile`, prunes dev dependencies, and starts the machine(s).
-
-4. **Run the auth flow on Fly (optional)**
-   - Connect to a running machine:
-     ```bash
-     fly ssh console -a playlists-falling-meadow-3086 --select
-     ```
-   - Inside the container:
-     ```bash
-     cd /app
-     export PORT=3000
-     export SPOTIFY_REDIRECT_URI=https://playlists-falling-meadow-3086.fly.dev/callback
-     node dist/index.js --auth
-     ```
-   - Authorize in the browser and copy the tokens shown in the success page into `fly secrets set ...`.
-
+4. **Optional: run the auth flow on the Fly machine**
+   ```bash
+   fly ssh console -a <app> --select
+   cd /app
+   export PORT=3000
+   export SPOTIFY_REDIRECT_URI=https://<app>.fly.dev/callback
+   node dist/index.js --auth
+   ```
 5. **Monitor**
    ```bash
-   fly status                                   # machine overview
-   fly logs -a playlists-falling-meadow-3086    # tail logs
-   fly machine list -a playlists-falling-meadow-3086
+   fly status
+   fly logs -a <app>
+   fly machine list -a <app>
    ```
-   If a machine is stuck after a crash loop you can remove it with:
-   ```bash
-   fly machine destroy <machine-id> -a playlists-falling-meadow-3086 --force
-   ```
+   Remove stuck machines with `fly machine destroy <id> -a <app> --force`.
 
-## Running the production image locally
-
-You can reproduce the Fly container with Docker:
+## Running the Production Image Locally
 
 ```bash
 docker build -t playlist-prod .
 docker run --rm -it -p 3000:3000 --env-file .env -e NODE_ENV=production playlist-prod
 ```
 
-The container prints the same logs you see on Fly. To exec into the container or run the auth flow:
+Attach to the container with `docker exec -it <id> /bin/bash` if you need to rerun `node dist/index.js --auth` or inspect logs.
+
+## Configuration Reference
+
+| Variable | Description |
+| --- | --- |
+| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Spotify credentials |
+| `SPOTIFY_REDIRECT_URI` | OAuth callback URL |
+| `SPOTIFY_ACCESS_TOKEN` / `SPOTIFY_REFRESH_TOKEN` | tokens obtained via `npm run auth` |
+| `PLAYLIST_DURATION_MINUTES` | Target playlist length (scales phase durations) |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_NOTIFICATION_EMAIL` | Email notification settings (optional) |
+
+The phase definitions live in `ritual-phases.yaml`; adjust keywords, durations, and descriptions there. Update the file before rebuilding if you want a different flow.
+
+## Development & Testing
 
 ```bash
-docker exec -it <container-id> /bin/bash
-cd /app && node dist/index.js --auth
-```
-
-## Configuration
-
-### Environment Variables
-- `SPOTIFY_CLIENT_ID` - Your Spotify app client ID
-- `SPOTIFY_CLIENT_SECRET` - Your Spotify app client secret  
-- `SPOTIFY_REDIRECT_URI` - Your ngrok callback URL
-- `PLAYLIST_DURATION_MINUTES` - Playlist duration in minutes (default: 30)
-
-### Customizing Playlist Duration
-You can change the playlist duration by setting `PLAYLIST_DURATION_MINUTES` in your `.env` file:
-```bash
-PLAYLIST_DURATION_MINUTES=45  # For 45-minute playlists
-PLAYLIST_DURATION_MINUTES=20  # For 20-minute playlists
-```
-
-The phase durations will be scaled proportionally to maintain the ritual flow.
-
-## Usage
-
-### Run Once
-Generate a single playlist immediately:
-```bash
-npm run dev -- --once
-```
-
-### Daily Scheduler
-Start the daily scheduler (default: 6:00 AM):
-```bash
-npm start
-```
-
-### Custom Schedule Time
-```bash
-npm start -- --hour=7 --minute=30
-```
-
-## Development
-
-```bash
-# Development mode with auto-reload
+# Development mode with hot reload
 npm run dev
 
-# Run tests
+# Jest unit tests
 npm test
 
-# Run tests in watch mode
+# Watch mode
 npm run test:watch
 
-# Lint code
+# ESLint
 npm run lint
-
-# Build for production
-npm run build
 ```
 
-## How It Works
-
-1. **Authentication**: Connects to Spotify API using OAuth2 flow
-2. **Data Collection**: Fetches your 200 most recent Liked Songs
-3. **Phase Matching**: Uses keyword matching to categorize songs into ritual phases:
-   - Searches track names and artist names for phase-specific keywords
-   - Considers song duration preferences for each phase
-   - Applies intelligent scoring with randomization for variety
-4. **Playlist Generation**: Selects optimal tracks for each phase within duration constraints
-5. **Spotify Integration**: Creates and populates the playlist in your Spotify account
-
-## Phase Matching Criteria
-
-Each phase uses keyword matching and duration preferences:
-- **Going to Temple**: Keywords like "meditation", "calm", "peace", "ambient" | 2-6 min songs
-- **Intro**: Keywords like "warm", "begin", "groove", "build" | 2-5 min songs  
-- **Dancing With the Divine**: Keywords like "dance", "joy", "sacred", "spirit" | 3-6 min songs
-- **Dealer's Choice**: Keywords like "wild", "free", "surprise" | 1-8 min songs (wide range)
-- **Unleashing the Beast**: Keywords like "power", "intense", "warrior", "fire" | 3-7 min songs
-- **Outro**: Keywords like "cool", "relax", "gentle", "peaceful" | 2-6 min songs
-
-## Testing
-
-The project includes comprehensive unit tests covering:
-- Playlist generation logic
-- Spotify API integration
-- Scheduling functionality
-- Phase matching algorithms
-
-Run tests with:
-```bash
-npm test
-```
-
-## Dependencies
-
-- **axios**: HTTP client for Spotify API
-- **node-cron**: Task scheduling
-- **dotenv**: Environment variable management
-- **typescript**: Type safety
-- **jest**: Testing framework
+The project is written in TypeScript and uses Jest for unit tests. Scheduling is provided by `node-cron`, Spotify calls use `axios`, and email notifications rely on the Resend SDK.
 
 ## License
 
